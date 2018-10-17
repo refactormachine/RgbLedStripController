@@ -69,39 +69,40 @@ public class TimerDialog extends DialogFragment {
     {
         super.onStart();    //super.onStart() is where dialog.show() is actually called on the underlying dialog, so we have to do it after this point
         AlertDialog d = (AlertDialog)getDialog();
-        if(d != null)
-        {
-            final NumberPicker npHours = d.findViewById(R.id.hoursNumberPicker);
-            final NumberPicker npMinutes = d.findViewById(R.id.minutesNumberPicker);
-            final NumberPicker npSeconds = d.findViewById(R.id.secondsNumberPicker);
-            final RadioButton radioTurnOn = d.findViewById(R.id.turnOnRadio);
-            final RadioButton radioTurnOff = d.findViewById(R.id.turnOffRadio);
+        if(d == null)
+            return;
 
-            Button positiveButton = d.getButton(Dialog.BUTTON_POSITIVE);
-            positiveButton.setOnClickListener(new View.OnClickListener()
+        final NumberPicker npHours = d.findViewById(R.id.hoursNumberPicker);
+        final NumberPicker npMinutes = d.findViewById(R.id.minutesNumberPicker);
+        final NumberPicker npSeconds = d.findViewById(R.id.secondsNumberPicker);
+        final RadioButton radioTurnOn = d.findViewById(R.id.turnOnRadio);
+        final RadioButton radioTurnOff = d.findViewById(R.id.turnOffRadio);
+
+        Button positiveButton = d.getButton(Dialog.BUTTON_POSITIVE);
+        positiveButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
             {
-                @Override
-                public void onClick(View v)
-                {
-                    mHours = npHours.getValue();
-                    mMinutes = npMinutes.getValue();
-                    mSeconds = npSeconds.getValue();
-                    mTimerType = radioTurnOn.isChecked() ? TimerType.TURN_ON : TimerType.TURN_OFF;
-                    
-                    Boolean canCloseDialog = false;
-                    if (radioTurnOn.isChecked() || radioTurnOff.isChecked()) {
-                        canCloseDialog = true;
-                    } else {
-                        Toast.makeText(getActivity(), "You must select timer on or off", Toast.LENGTH_SHORT).show();
-                    }
-                    if (canCloseDialog) {
-                        dismiss();
-                        mListener.onTimerDialogPositiveClick(TimerDialog.this);
-                    }
-                    //else dialog stays open. Make sure you have an obvious way to close the dialog especially if you set cancellable to false.
+                mHours = npHours.getValue();
+                mMinutes = npMinutes.getValue();
+                mSeconds = npSeconds.getValue();
+                mTimerType = radioTurnOn.isChecked() ? TimerType.TURN_ON : TimerType.TURN_OFF;
+
+                Boolean canCloseDialog = false;
+                if (radioTurnOn.isChecked() || radioTurnOff.isChecked()) {
+                    canCloseDialog = true;
+                } else {
+                    Toast.makeText(getActivity(), "You must select timer on or off", Toast.LENGTH_SHORT).show();
                 }
-            });
-        }
+                if (canCloseDialog) {
+                    dismiss();
+                    mListener.onTimerDialogPositiveClick(TimerDialog.this);
+                }
+                //else dialog stays open. Make sure you have an obvious way to close the dialog especially if you set cancellable to false.
+            }
+        });
+
     }
 
 

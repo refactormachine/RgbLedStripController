@@ -80,10 +80,11 @@ public class ColorPickerView extends View {
 
     protected void onDraw(Canvas canvas) {
         canvas.drawBitmap(bitty, r1, r2, null);
-        if (thumbIsVisible) {
-            thumb.draw(canvas);
-            thumb2.draw(canvas);
+        if (!thumbIsVisible) {
+            return;
         }
+        thumb.draw(canvas);
+        thumb2.draw(canvas);
     }
 
     // gets the color at a certain point

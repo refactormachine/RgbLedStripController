@@ -83,50 +83,51 @@ public class AnimationDialog extends DialogFragment {
     {
         super.onStart();    //super.onStart() is where dialog.show() is actually called on the underlying dialog, so we have to do it after this point
         AlertDialog d = (AlertDialog)getDialog();
-        if(d != null)
+        if(d == null)
+            return;
+
+        final Spinner spinnerAnimation = d.findViewById(R.id.animationSpinner);
+        final EditText etDuration = d.findViewById(R.id.animationDurationEditText);
+        final CheckBox cbRandomColors = d.findViewById(R.id.randomColorsCheckBox);
+
+        Button positiveButton = d.getButton(Dialog.BUTTON_POSITIVE);
+        positiveButton.setOnClickListener(new View.OnClickListener()
         {
-            final Spinner spinnerAnimation = d.findViewById(R.id.animationSpinner);
-            final EditText etDuration = d.findViewById(R.id.animationDurationEditText);
-            final CheckBox cbRandomColors = d.findViewById(R.id.randomColorsCheckBox);
-
-            Button positiveButton = d.getButton(Dialog.BUTTON_POSITIVE);
-            positiveButton.setOnClickListener(new View.OnClickListener()
+            @Override
+            public void onClick(View v)
             {
-                @Override
-                public void onClick(View v)
-                {
-                    String durationText = etDuration.getText().toString();
-                    try {
-                        mDuration = Float.parseFloat(durationText);
-                    } catch (NumberFormatException ex) {
-                        mDuration = 0;
-                    }
-                    int position = spinnerAnimation.getSelectedItemPosition();
-                    try {
-                        mAnimationType = AnimationType.values()[position];
-                    } catch (IndexOutOfBoundsException ex) {
-                        mAnimationType = AnimationType.OFF;
-                    }
-                    mRandomColors = cbRandomColors.isChecked();
-
-                    Boolean canCloseDialog = true;
-                    if (position == 0) {
-                        Toast.makeText(getActivity(), "Animation is missing", Toast.LENGTH_SHORT).show();
-                        canCloseDialog = false;
-                    } else if (durationText.equals("")) {
-                        Toast.makeText(getActivity(), "Animation duration is missing", Toast.LENGTH_SHORT).show();
-                        canCloseDialog = false;
-                    }
-
-                    if (canCloseDialog) {
-                        dismiss();
-                        mListener.onAnimationDialogPositiveClick(AnimationDialog.this);
-                    }
-                    //else dialog stays open. Make sure you have an obvious way to close the dialog especially if you set cancellable to false.
+                String durationText = etDuration.getText().toString();
+                try {
+                    mDuration = Float.parseFloat(durationText);
+                } catch (NumberFormatException ex) {
+                    mDuration = 0;
                 }
-            });
-        }
+                int position = spinnerAnimation.getSelectedItemPosition();
+                try {
+                    mAnimationType = AnimationType.values()[position];
+                } catch (IndexOutOfBoundsException ex) {
+                    mAnimationType = AnimationType.OFF;
+                }
+                mRandomColors = cbRandomColors.isChecked();
+
+                Boolean canCloseDialog = true;
+                if (position == 0) {
+                    Toast.makeText(getActivity(), "Animation is missing", Toast.LENGTH_SHORT).show();
+                    canCloseDialog = false;
+                } else if (durationText.equals("")) {
+                    Toast.makeText(getActivity(), "Animation duration is missing", Toast.LENGTH_SHORT).show();
+                    canCloseDialog = false;
+                }
+
+                if (canCloseDialog) {
+                    dismiss();
+                    mListener.onAnimationDialogPositiveClick(AnimationDialog.this);
+                }
+                //else dialog stays open. Make sure you have an obvious way to close the dialog especially if you set cancellable to false.
+            }
+        });
     }
+
 
 
     /* The activity that creates an instance of this dialog fragment must
