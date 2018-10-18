@@ -397,10 +397,28 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         sendDataToDeviceTask.execute(new SendDataToDeviceTaskArgs(dataToSend, "Off timer set!"));
     }
 
-    public void sendAnimationToLedDevice(float duration, AnimationDialog.AnimationType animationType, Boolean randomColors) {
-        short durationInMillis = (short) (duration * 1000);
+    public void sendAnimationToLedDevice(float durationSeconds, AnimationDialog.AnimationType animationType, Boolean randomColors) {
+        short durationInMillis = (short) (durationSeconds * 1000);
         byte animationCode = animationTypeToCode(animationType);
         Log.d(TAG, "Sending to led device animation");
+        byte[] data = createAnimationMessage(randomColors, durationInMillis, animationCode);
+        byte[] dataToSend = encodePacketData(data);
+        sendDataToDeviceTask = new SendDataToDeviceTask();
+        String message = animationMessage(durationSeconds, animationType, durationInMillis, animationCode);
+        sendDataToDeviceTask.execute(new SendDataToDeviceTaskArgs(dataToSend, message));
+    }
+
+    private String animationMessage(float durationSeconds, AnimationDialog.AnimationType animationType, short durationInMillis, byte animationCode) {
+        if (animationCode == 0 || durationInMillis == 0) {
+            return "Stops animation!";
+        } else {
+            String animationName = animationType.name().toLowerCase();
+            animationName = animationName.substring(0, 1).toUpperCase() + animationName.substring(1);
+            return String.format("%s animation of %.2f sec set!", animationName, durationSeconds);
+        }
+    }
+
+    private byte[] createAnimationMessage(Boolean randomColors, short durationInMillis, byte animationCode) {
         byte[] serializedDuration = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(durationInMillis).array();
         byte[] data = new byte[7];
         data[0] = START_MARKER;
@@ -409,17 +427,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         System.arraycopy(serializedDuration, 0, data, 3, 2);
         data[5] = (byte) (randomColors ? 0x01 : 0x00);
         data[6] = END_MARKER;
-        byte[] dataToSend = encodePacketData(data);
-        sendDataToDeviceTask = new SendDataToDeviceTask();
-        String message;
-        if (animationCode == 0 || durationInMillis == 0) {
-            message = "Stops animation!";
-        } else {
-            String animationName = animationType.name().toLowerCase();
-            animationName = animationName.substring(0, 1).toUpperCase() + animationName.substring(1);
-            message = String.format("%s animation of %.2f sec set!", animationName, duration);
-        }
-        sendDataToDeviceTask.execute(new SendDataToDeviceTaskArgs(dataToSend, message));
+        return data;
     }
 
     private byte animationTypeToCode(AnimationDialog.AnimationType animationType) {
