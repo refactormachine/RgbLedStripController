@@ -11,6 +11,8 @@ import android.graphics.drawable.shapes.OvalShape;
 import android.util.TypedValue;
 import android.view.View;
 
+import static java.lang.Math.min;
+
 public class ColorPickerView extends View {
 
     private static final int bwidth = 256;
@@ -25,7 +27,7 @@ public class ColorPickerView extends View {
     private int thumbEdge = 1; //value in dp
     private boolean thumbIsVisible = false;
     // for the bitmap
-    private Bitmap bitty;
+    private ColorBitmap bitty;
     private int[] pixels = new int[bwidth * bheight];
     private double factor = 3.1;
     // coordinates of the currently selected pixel (0-255)
@@ -51,8 +53,7 @@ public class ColorPickerView extends View {
     public ColorPickerView(Context context, int blue, int density) {
         super(context);
         Bitmap.Config config = Bitmap.Config.ARGB_8888;
-        bitty = Bitmap.createBitmap(bwidth, bheight, config);
-        updateBitmap(blue);
+        bitty = new ColorBitmap(bwidth, bheight, config, blue);
         thumbRadius = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, thumbRadius, getResources().getDisplayMetrics());
         thumbEdge = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, thumbEdge, getResources().getDisplayMetrics());
         createThumb(paddingx, paddingy, Color.BLACK);
@@ -70,13 +71,13 @@ public class ColorPickerView extends View {
                 paddingy = (height - width + 1) / 2;
                 size = width;
             }
-            factor = (1.0 * size - 2.0 * Math.min(paddingx, paddingy)) / (1.0 * bwidth);
+            factor = (1.0 * size - 2.0 * min(paddingx, paddingy)) / (1.0 * bwidth);
             r2 = new Rect(paddingx, paddingy, (int) width - paddingx, (int) height - paddingy);
         }
     }
 
     protected void onDraw(Canvas canvas) {
-        canvas.drawBitmap(bitty, r1, r2, null);
+        canvas.drawBitmap(bitty.map, r1, r2, null);
         if (!thumbIsVisible) {
             return;
         }
@@ -92,7 +93,6 @@ public class ColorPickerView extends View {
         if (!thumbIsVisible && wasTouched) {
             thumbIsVisible = true;
         }
-
         if (thumbX >= r2.right) thumbX = r2.right - 1;
         else if (thumbX < r2.left) thumbX = r2.left;
         if (thumbY >= r2.bottom) thumbY = r2.bottom - 1;
@@ -104,7 +104,7 @@ public class ColorPickerView extends View {
 
         moveThumb(thumbX, thumbY);
 
-        int pixel = bitty.getPixel(xp, yp);
+        int pixel = bitty.map.getPixel(xp, yp);
         thumb.getPaint().setColor(pixel);
         return pixel;
     }
@@ -120,27 +120,13 @@ public class ColorPickerView extends View {
         thumb2.setBounds(0, 0, 0, 0);
     }
 
-    // called at multitouch events
-    public int updateShade(double scale) {
-        float k = ((float) scale - 1) * 100 + kPrev;
-        if (k > 255) k = 255; // if hsv, set this to 360
-        if (k < 0) k = 0; // can't let it go to 0 or we never scale it back again
-        updateBitmap((int) k);
-        if (thumbIsVisible) {
-            thumbIsVisible = false;
-        }
-        int pixel = bitty.getPixel(xp, yp);
-        thumb.getPaint().setColor(pixel);
-        return pixel;
-    }
-
     // called at seekbar events
     public int updateShade(int shade) {
         updateBitmap(shade);
         if (!thumbIsVisible) {
             thumbIsVisible = true;
         }
-        int pixel = bitty.getPixel(xp, yp);
+        int pixel = bitty.map.getPixel(xp, yp);
         thumb.getPaint().setColor(pixel);
         return pixel;
     }
@@ -169,13 +155,7 @@ public class ColorPickerView extends View {
 
     // updates the bitmap based on a blue factor
     private void updateBitmap(int k) {
-        for (int i = 0; i < bwidth; i++) {
-            for (int j = 0; j < bheight; j++) {
-                pixels[i * bheight + j] = Color.rgb(j, i, k);
-            }
-        }
-        kPrev = k;
-        bitty.setPixels(pixels, 0, bwidth, 0, 0, bwidth, bheight);
+        bitty.setBlue(k);
     }
 
     public void saveColorState() {
