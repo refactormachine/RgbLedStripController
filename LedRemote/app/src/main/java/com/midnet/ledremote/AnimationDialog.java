@@ -106,10 +106,10 @@ public class AnimationDialog extends DialogFragment {
 
                 Boolean canCloseDialog = true;
                 if (position == 0) {
-                    Toast.makeText(getActivity(), "Animation is missing", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity(), "AnimationMessage is missing", Toast.LENGTH_SHORT).show();
                     canCloseDialog = false;
                 } else if (durationText.equals("")) {
-                    Toast.makeText(getActivity(), "Animation duration is missing", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getActivity(), "AnimationMessage duration is missing", Toast.LENGTH_SHORT).show();
                     canCloseDialog = false;
                 }
 

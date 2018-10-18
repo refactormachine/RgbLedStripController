@@ -36,15 +36,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     public final static String TAG = "LedRemote";
     private static final int SETTINGS_ACTIVITY_REQUEST = 1;
 
-    private static final byte START_MARKER = (byte) 0xFE;
-    private static final byte END_MARKER = (byte) 0xFF;
-    private static final byte SPECIAL_BYTE = (byte) 0xFD;
     private static final byte SET_COLOR_COMMAND = (byte) 0x01;
     private static final byte TIMER_ON_COMMAND = (byte) 0x02;
     private static final byte TIMER_OFF_COMMAND = (byte) 0x03;
-    private static final byte ANIMATION_COMMAND = (byte) 0x04;
-    private static final byte FADE_ANIMATION_CODE = (byte) 0x01;
-    private static final byte BLINK_ANIMATION_CODE = (byte) 0x02;
     private static final int blueStart = 100;
     private static final String SERVICE_TYPE = "_ledstrip._tcp.";
     public ColorPickerView colorPicker;
@@ -72,10 +66,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private int mCurrentColor;
     private int mCurrentSeekProgress;
     private int mTimerMilliseconds;
-
-    public static int unsignedToBytes(byte b) {
-        return b & 0xFF;
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -203,8 +193,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     // sends color data to device as {START, CMD, R, G, B, END}
     private void sendColorToLedDevice(int color) {
         Log.d(TAG, "Sending to led device color: " + color);
-        byte[] data = {START_MARKER, SET_COLOR_COMMAND, (byte) Color.red(color), (byte) Color.green(color), (byte) Color.blue(color), END_MARKER};
-        byte[] dataToSend = encodePacketData(data);
+        byte[] data = {PacketData.START_MARKER, SET_COLOR_COMMAND, (byte) Color.red(color), (byte) Color.green(color), (byte) Color.blue(color), PacketData.END_MARKER};
+        byte[] dataToSend = PacketData.encodePacketData(data);
 
         if (!IsAsyncRunning) {
             sendDataToDeviceTask = new SendDataToDeviceTask();
@@ -218,32 +208,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             sendDataToDeviceTask.execute(new SendDataToDeviceTaskArgs(dataToSend));
             IsAsyncRunning = true;
         }
-    }
-
-    private byte[] encodePacketData(byte[] data) {
-        int length = 2; // for start and end markers
-        for (int i = 1; i < data.length - 1; i++) { // don't count start and end markers
-            length++;
-            if (unsignedToBytes(data[i]) >= unsignedToBytes(SPECIAL_BYTE)) {
-                length++;
-            }
-        }
-        byte[] encodedData = new byte[length];
-        encodedData[0] = data[0]; // copy start marker as is
-        int j = 1; // skip start marker
-        for (int i = 1; i < data.length - 1; i++) { // don't take start and end markers
-            if (unsignedToBytes(data[i]) >= unsignedToBytes(SPECIAL_BYTE)) {
-                //encode special characters
-                encodedData[j] = SPECIAL_BYTE;
-                j++;
-                encodedData[j] = (byte) (unsignedToBytes(data[i]) - unsignedToBytes(SPECIAL_BYTE));
-            } else {
-                encodedData[j] = data[i];
-            }
-            j++;
-        }
-        encodedData[j] = data[data.length - 1]; // copy end marker as is
-        return encodedData;
     }
 
     // sets the text boxes' text and color background.
@@ -368,7 +332,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         Log.d(TAG, "Sending to led device color: " + mTimerOnColor);
         byte[] serializedTimer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(mTimerMilliseconds).array();
         byte[] data = new byte[10];
-        data[0] = START_MARKER;
+        data[0] = PacketData.START_MARKER;
         data[1] = TIMER_ON_COMMAND;
         data[2] = (byte) Color.red(mTimerOnColor);
         data[3] = (byte) Color.green(mTimerOnColor);
@@ -376,8 +340,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         for (int i = 0; i < 4; i++) {
             data[i + 5] = serializedTimer[i];
         }
-        data[9] = END_MARKER;
-        byte[] dataToSend = encodePacketData(data);
+        data[9] = PacketData.END_MARKER;
+        byte[] dataToSend = PacketData.encodePacketData(data);
         sendDataToDeviceTask = new SendDataToDeviceTask();
         sendDataToDeviceTask.execute(new SendDataToDeviceTaskArgs(dataToSend, "On timer set!"));
     }
@@ -386,64 +350,20 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         Log.d(TAG, "Sending to led device timer off");
         byte[] serializedTimer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(mTimerMilliseconds).array();
         byte[] data = new byte[7];
-        data[0] = START_MARKER;
+        data[0] = PacketData.START_MARKER;
         data[1] = TIMER_OFF_COMMAND;
         for (int i = 0; i < 4; i++) {
             data[i + 2] = serializedTimer[i];
         }
-        data[6] = END_MARKER;
-        byte[] dataToSend = encodePacketData(data);
+        data[6] = PacketData.END_MARKER;
+        byte[] dataToSend = PacketData.encodePacketData(data);
         sendDataToDeviceTask = new SendDataToDeviceTask();
         sendDataToDeviceTask.execute(new SendDataToDeviceTaskArgs(dataToSend, "Off timer set!"));
     }
 
     public void sendAnimationToLedDevice(float durationSeconds, AnimationDialog.AnimationType animationType, Boolean randomColors) {
-        short durationInMillis = (short) (durationSeconds * 1000);
-        byte animationCode = animationTypeToCode(animationType);
-        Log.d(TAG, "Sending to led device animation");
-        byte[] data = createAnimationMessage(randomColors, durationInMillis, animationCode);
-        byte[] dataToSend = encodePacketData(data);
         sendDataToDeviceTask = new SendDataToDeviceTask();
-        String message = animationMessage(durationSeconds, animationType, durationInMillis, animationCode);
-        sendDataToDeviceTask.execute(new SendDataToDeviceTaskArgs(dataToSend, message));
-    }
-
-    private String animationMessage(float durationSeconds, AnimationDialog.AnimationType animationType, short durationInMillis, byte animationCode) {
-        if (animationCode == 0 || durationInMillis == 0) {
-            return "Stops animation!";
-        } else {
-            String animationName = animationType.name().toLowerCase();
-            animationName = animationName.substring(0, 1).toUpperCase() + animationName.substring(1);
-            return String.format("%s animation of %.2f sec set!", animationName, durationSeconds);
-        }
-    }
-
-    private byte[] createAnimationMessage(Boolean randomColors, short durationInMillis, byte animationCode) {
-        byte[] serializedDuration = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(durationInMillis).array();
-        byte[] data = new byte[7];
-        data[0] = START_MARKER;
-        data[1] = ANIMATION_COMMAND;
-        data[2] = animationCode;
-        System.arraycopy(serializedDuration, 0, data, 3, 2);
-        data[5] = (byte) (randomColors ? 0x01 : 0x00);
-        data[6] = END_MARKER;
-        return data;
-    }
-
-    private byte animationTypeToCode(AnimationDialog.AnimationType animationType) {
-        byte animationCode;
-        switch (animationType) {
-            case FADE:
-                animationCode = FADE_ANIMATION_CODE;
-                break;
-            case BLINK:
-                animationCode = BLINK_ANIMATION_CODE;
-                break;
-            default:
-                animationCode = 0; // Stops animation
-                break;
-        }
-        return animationCode;
+        sendDataToDeviceTask.execute(new AnimationMessage(durationSeconds, animationType, randomColors).getSendDataToDeviceTaskArgs());
     }
 
     public void checkConnection() {
@@ -452,7 +372,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             // Checking connection
             socket = new Socket(mHostAddress, mPort);
             OutputStream out = socket.getOutputStream();
-            out.write(new byte[]{END_MARKER}); // Send endMarker to release server from waiting on readBytesUntil
+            out.write(new byte[]{PacketData.END_MARKER}); // Send endMarker to release server from waiting on readBytesUntil
             out.flush();
             out.close();
             socket.close();
@@ -599,6 +519,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
     }
 
+
     public class SendDataToDeviceTask extends AsyncTask<SendDataToDeviceTaskArgs, Void, Void> {
         @Override
         protected Void doInBackground(final SendDataToDeviceTaskArgs... args) {
@@ -630,17 +551,4 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
     }
 
-    public class SendDataToDeviceTaskArgs {
-        public String onSentMessage;
-        byte[] dataToSend;
-
-        SendDataToDeviceTaskArgs(byte[] dataToSend) {
-            this(dataToSend, null);
-        }
-
-        SendDataToDeviceTaskArgs(byte[] dataToSend, String onSentMessage) {
-            this.dataToSend = dataToSend;
-            this.onSentMessage = onSentMessage;
-        }
-    }
 }
