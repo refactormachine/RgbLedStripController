@@ -28,14 +28,10 @@ public class ColorPickerView extends View {
     private boolean thumbIsVisible = false;
     // for the bitmap
     private ColorBitmap bitty;
-    private int[] pixels = new int[bwidth * bheight];
     private double factor = 3.1;
     // coordinates of the currently selected pixel (0-255)
     private int xp;
     private int yp;
-
-    // value for the z part of the color graph
-    private float kPrev = 150;
 
     private Rect r1 = new Rect(0, 0, bwidth, bheight);
     private Rect r2;
@@ -57,6 +53,10 @@ public class ColorPickerView extends View {
         thumbRadius = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, thumbRadius, getResources().getDisplayMetrics());
         thumbEdge = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, thumbEdge, getResources().getDisplayMetrics());
         createThumb(paddingx, paddingy, Color.BLACK);
+    }
+
+    public static int constrainToRange(int value, int min, int max) {
+        return Math.min(Math.max(value, min), max);
     }
 
     @Override
@@ -87,16 +87,12 @@ public class ColorPickerView extends View {
 
     // gets the color at a certain point
     public int getColor(float xf, float yf, boolean wasTouched) {
-        thumbX = (int) xf;
-        thumbY = (int) yf;
+        thumbX = constrainToRange((int) xf, r2.left,r2.right - 1);
+        thumbY = constrainToRange((int) yf, r2.top, r2.bottom - 1);
 
         if (!thumbIsVisible && wasTouched) {
             thumbIsVisible = true;
         }
-        if (thumbX >= r2.right) thumbX = r2.right - 1;
-        else if (thumbX < r2.left) thumbX = r2.left;
-        if (thumbY >= r2.bottom) thumbY = r2.bottom - 1;
-        else if (thumbY < r2.top) thumbY = r2.top;
 
         //xp and yp are in the scaled bitmap from 0-255
         xp = (int) ((1.0 * (thumbX - paddingx)) / factor);
