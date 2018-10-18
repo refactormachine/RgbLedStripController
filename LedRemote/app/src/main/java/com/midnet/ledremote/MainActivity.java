@@ -268,8 +268,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     //called when the user touches the color palette
     public boolean onTouch(View view, MotionEvent event) {
-        int color = 0;
-        color = colorPicker.getColor(event.getX(),event.getY(),true);
+        int color = colorPicker.getColor(event.getX(),event.getY(),true);
         colorPicker.invalidate();
         //re-draw the selected colors text
         updateTextAreas(color);
@@ -406,9 +405,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         data[0] = START_MARKER;
         data[1] = ANIMATION_COMMAND;
         data[2] = animationCode;
-        for (int i = 0; i < 2; i++) {
-            data[i + 3] = serializedDuration[i];
-        }
+        System.arraycopy(serializedDuration, 0, data, 3, 2);
         data[5] = (byte) (randomColors ? 0x01 : 0x00);
         data[6] = END_MARKER;
         byte[] dataToSend = encodePacketData(data);
