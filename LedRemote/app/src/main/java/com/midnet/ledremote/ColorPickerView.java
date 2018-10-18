@@ -3,12 +3,7 @@ package com.midnet.ledremote;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.drawable.ShapeDrawable;
-import android.graphics.drawable.shapes.OvalShape;
-import android.util.TypedValue;
 import android.view.View;
 
 import static java.lang.Math.min;
@@ -17,15 +12,10 @@ public class ColorPickerView extends View {
 
     private static final int bwidth = 256;
     private static final int bheight = 256;
+    private final Thumbnail thumbnail;
     public int paddingx = 0;
     public int paddingy = 0;
     public int size;
-    // for the thumbnail
-    private ShapeDrawable thumb;
-    private ShapeDrawable thumb2;
-    private int thumbRadius = 51; //value in dp
-    private int thumbEdge = 1; //value in dp
-    private boolean thumbIsVisible = false;
     // for the bitmap
     private ColorBitmap bitty;
     private double factor = 3.1;
@@ -50,9 +40,7 @@ public class ColorPickerView extends View {
         super(context);
         Bitmap.Config config = Bitmap.Config.ARGB_8888;
         bitty = new ColorBitmap(bwidth, bheight, config, blue);
-        thumbRadius = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, thumbRadius, getResources().getDisplayMetrics());
-        thumbEdge = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, thumbEdge, getResources().getDisplayMetrics());
-        createThumb(paddingx, paddingy, Color.BLACK);
+        thumbnail = new Thumbnail(paddingx, paddingy, getResources().getDisplayMetrics());
     }
 
     public static int constrainToRange(int value, int min, int max) {
@@ -78,11 +66,7 @@ public class ColorPickerView extends View {
 
     protected void onDraw(Canvas canvas) {
         canvas.drawBitmap(bitty.map, r1, r2, null);
-        if (!thumbIsVisible) {
-            return;
-        }
-        thumb.draw(canvas);
-        thumb2.draw(canvas);
+        thumbnail.draw(canvas);
     }
 
     // gets the color at a certain point
@@ -90,40 +74,33 @@ public class ColorPickerView extends View {
         thumbX = constrainToRange((int) xf, r2.left,r2.right - 1);
         thumbY = constrainToRange((int) yf, r2.top, r2.bottom - 1);
 
-        if (!thumbIsVisible && wasTouched) {
-            thumbIsVisible = true;
+        if (!thumbnail.isVisible() && wasTouched) {
+            thumbnail.setVisible(true);
         }
 
         //xp and yp are in the scaled bitmap from 0-255
         xp = (int) ((1.0 * (thumbX - paddingx)) / factor);
         yp = (int) ((1.0 * (thumbY - paddingy)) / factor);
 
-        moveThumb(thumbX, thumbY);
+        thumbnail.moveThumb(thumbX, thumbY);
 
         int pixel = bitty.map.getPixel(xp, yp);
-        thumb.getPaint().setColor(pixel);
+        thumbnail.setColor(pixel);
         return pixel;
     }
 
-    private void moveThumb(int x, int y) {
-        thumb.setBounds(x - thumbRadius, y - thumbRadius, x + thumbRadius, y + thumbRadius);
-        thumb2.setBounds(x - thumbRadius - thumbEdge, y - thumbRadius - thumbEdge, x + thumbRadius + thumbEdge, y + thumbRadius + thumbEdge);
-    }
-
     public void noColor() {
-        thumbIsVisible = false;
-        thumb.setBounds(0, 0, 0, 0);
-        thumb2.setBounds(0, 0, 0, 0);
+        thumbnail.setVisible(false);
     }
 
     // called at seekbar events
     public int updateShade(int shade) {
         updateBitmap(shade);
-        if (!thumbIsVisible) {
-            thumbIsVisible = true;
+        if (!thumbnail.isVisible()) {
+            thumbnail.setVisible(true);
         }
         int pixel = bitty.map.getPixel(xp, yp);
-        thumb.getPaint().setColor(pixel);
+        thumbnail.setColor(pixel);
         return pixel;
     }
 
@@ -131,22 +108,7 @@ public class ColorPickerView extends View {
     public void setColor(int red, int green, int blue) {
         xp = red;
         yp = green;
-        moveThumb((int) (xp * factor + paddingx), (int) (yp * factor + paddingy));
-    }
-
-
-    // creates the thumbnail viewer
-    private void createThumb(int x, int y, int color) {
-        thumb = new ShapeDrawable(new OvalShape());
-        thumb.getPaint().setColor(color);
-
-        thumb2 = new ShapeDrawable(new OvalShape());
-        thumb2.getPaint().setColor(0x55FFFFFF);
-        thumb2.getPaint().setStyle(Paint.Style.STROKE);
-        thumb2.getPaint().setStrokeWidth(5);
-
-        thumb.getPaint().setAntiAlias(true);
-        thumb2.getPaint().setAntiAlias(true);
+        thumbnail.moveThumb((int) (xp * factor + paddingx), (int) (yp * factor + paddingy));
     }
 
     // updates the bitmap based on a blue factor
@@ -155,7 +117,7 @@ public class ColorPickerView extends View {
     }
 
     public void saveColorState() {
-        savedColor = thumb.getPaint().getColor();
+        savedColor = thumbnail.getColor();
         savedThumbX = thumbX;
         savedThumbY = thumbY;
         savedXp = xp;
@@ -163,10 +125,10 @@ public class ColorPickerView extends View {
     }
 
     public void restoreColorState() {
-        thumb.getPaint().setColor(savedColor);
+        thumbnail.setColor(savedColor);
         thumbX = savedThumbX;
         thumbY = savedThumbY;
-        moveThumb(thumbX, thumbY);
+        thumbnail.moveThumb(thumbX, thumbY);
         xp = savedXp;
         yp = savedYp;
         invalidate();
