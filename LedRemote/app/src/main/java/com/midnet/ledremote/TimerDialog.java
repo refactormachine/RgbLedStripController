@@ -19,6 +19,10 @@ public class TimerDialog extends DialogFragment {
     private int mSeconds;
     private TimerType mTimerType;
 
+    int getTotalMiliseconds() {
+        return ((getHours() * 60 + getMinutes()) * 60 + getSeconds()) * 1000;
+    }
+
     public enum TimerType {
         TURN_ON,
         TURN_OFF
