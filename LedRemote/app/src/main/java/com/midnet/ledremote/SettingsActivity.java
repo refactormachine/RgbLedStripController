@@ -37,15 +37,6 @@ import java.util.Map;
 public class SettingsActivity extends PreferenceActivity {
     public static final String KEY_PREF_IP_ADDRESS = "ip_address";
     public static final String KEY_PREF_PORT = "port";
-
-    SharedPreferences sharedPreferences;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        getFragmentManager().beginTransaction().replace(android.R.id.content, new MyPreferenceFragment()).commit();
-    }
-
     private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
@@ -57,6 +48,7 @@ public class SettingsActivity extends PreferenceActivity {
             return true;
         }
     };
+    SharedPreferences sharedPreferences;
 
     private static void bindPreferenceSummaryToValue(Preference preference) {
         // Set the listener to watch for value changes.
@@ -70,12 +62,15 @@ public class SettingsActivity extends PreferenceActivity {
                         .getString(preference.getKey(), ""));
     }
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getFragmentManager().beginTransaction().replace(android.R.id.content, new MyPreferenceFragment()).commit();
+    }
 
-    public static class MyPreferenceFragment extends PreferenceFragment
-    {
+    public static class MyPreferenceFragment extends PreferenceFragment {
         @Override
-        public void onCreate(final Bundle savedInstanceState)
-        {
+        public void onCreate(final Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             addPreferencesFromResource(R.xml.preferences);
 

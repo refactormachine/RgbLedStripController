@@ -45,7 +45,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private static final byte ANIMATION_COMMAND = (byte) 0x04;
     private static final byte FADE_ANIMATION_CODE = (byte) 0x01;
     private static final byte BLINK_ANIMATION_CODE = (byte) 0x02;
-
+    private static final int blueStart = 100;
+    private static final String SERVICE_TYPE = "_ledstrip._tcp.";
     public ColorPickerView colorPicker;
     private SeekBar seek;
     private TextView headingText;
@@ -53,9 +54,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private Button turnOffButton;
     private Button setTimerColorButton;
     private Button cancelTimerColorButton;
-    private static final int blueStart = 100;
-
-    private static final String SERVICE_TYPE = "_ledstrip._tcp.";
     private NsdManager.DiscoveryListener mDiscoveryListener;
     private NsdManager mNsdManager;
     private NsdManager.ResolveListener mResolveListener;
@@ -75,6 +73,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private int mCurrentSeekProgress;
     private int mTimerMilliseconds;
 
+    public static int unsignedToBytes(byte b) {
+        return b & 0xFF;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,7 +89,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         //get the display density
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        colorPicker = new ColorPickerView(this,blueStart,metrics.densityDpi);
+        colorPicker = new ColorPickerView(this, blueStart, metrics.densityDpi);
         layout.setMinimumHeight(width);
         layout.setOnTouchListener(this);
 
@@ -118,7 +120,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             public void run() {
                 mNsdManager.discoverServices(
                         SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, mDiscoveryListener);
-                synchronized(mCheckConnectionLockObject) {
+                synchronized (mCheckConnectionLockObject) {
                     checkConnection();
                 }
             }
@@ -199,17 +201,16 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     }
 
     // sends color data to device as {START, CMD, R, G, B, END}
-    private void sendColorToLedDevice(int color){
+    private void sendColorToLedDevice(int color) {
         Log.d(TAG, "Sending to led device color: " + color);
-        byte[] data = {START_MARKER, SET_COLOR_COMMAND, (byte) Color.red(color),(byte)Color.green(color),(byte)Color.blue(color), END_MARKER};
+        byte[] data = {START_MARKER, SET_COLOR_COMMAND, (byte) Color.red(color), (byte) Color.green(color), (byte) Color.blue(color), END_MARKER};
         byte[] dataToSend = encodePacketData(data);
 
         if (!IsAsyncRunning) {
             sendDataToDeviceTask = new SendDataToDeviceTask();
             sendDataToDeviceTask.execute(new SendDataToDeviceTaskArgs(dataToSend));
             IsAsyncRunning = true;
-        }
-        else {
+        } else {
             if (sendDataToDeviceTask != null && sendDataToDeviceTask.getStatus() != AsyncTask.Status.FINISHED) {
                 sendDataToDeviceTask.cancel(true);
             }
@@ -221,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     private byte[] encodePacketData(byte[] data) {
         int length = 2; // for start and end markers
-        for (int i=1; i < data.length - 1; i++) { // don't count start and end markers
+        for (int i = 1; i < data.length - 1; i++) { // don't count start and end markers
             length++;
             if (unsignedToBytes(data[i]) >= unsignedToBytes(SPECIAL_BYTE)) {
                 length++;
@@ -230,7 +231,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         byte[] encodedData = new byte[length];
         encodedData[0] = data[0]; // copy start marker as is
         int j = 1; // skip start marker
-        for (int i = 1; i < data.length - 1; i++){ // don't take start and end markers
+        for (int i = 1; i < data.length - 1; i++) { // don't take start and end markers
             if (unsignedToBytes(data[i]) >= unsignedToBytes(SPECIAL_BYTE)) {
                 //encode special characters
                 encodedData[j] = SPECIAL_BYTE;
@@ -247,7 +248,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     // sets the text boxes' text and color background.
     private void updateTextAreas(int col) {
-        int[] colBits = {Color.red(col),Color.green(col),Color.blue(col)};
+        int[] colBits = {Color.red(col), Color.green(col), Color.blue(col)};
         //set the text & color backgrounds
         headingText.setText(String.format("You picked #%s%s%s", String.format("%02X", Color.red(col)), String.format("%02X", Color.green(col)), String.format("%02X", Color.blue(col))));
         headingText.setBackgroundColor(col);
@@ -261,14 +262,14 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     // returns true if the color is dark.  useful for picking a font color.
     public boolean isDarkColor(int[] color) {
-        if (color[0]*.3 + color[1]*.59 + color[2]*.11 > 150) return false;
+        if (color[0] * .3 + color[1] * .59 + color[2] * .11 > 150) return false;
         return true;
     }
 
     @Override
     //called when the user touches the color palette
     public boolean onTouch(View view, MotionEvent event) {
-        int color = colorPicker.getColor(event.getX(),event.getY(),true);
+        int color = colorPicker.getColor(event.getX(), event.getY(), true);
         colorPicker.invalidate();
         //re-draw the selected colors text
         updateTextAreas(color);
@@ -309,10 +310,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     // generate a random hex color & display it
     public void randomColor(View v) {
-        int z = (int) (Math.random()*255);
-        int x = (int) (Math.random()*255);
-        int y = (int) (Math.random()*255);
-        colorPicker.setColor(x,y,z);
+        int z = (int) (Math.random() * 255);
+        int x = (int) (Math.random() * 255);
+        int y = (int) (Math.random() * 255);
+        colorPicker.setColor(x, y, z);
         SeekBar seek = findViewById(R.id.seekBar1);
         seek.setProgress(z);
     }
@@ -494,47 +495,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
     }
 
-    public class CheckConnectionTask implements Runnable {
-        @Override
-        public void run() {
-            checkConnection();
-        }
-    }
-
-    public class SendDataToDeviceTask extends AsyncTask<SendDataToDeviceTaskArgs, Void, Void>
-    {
-        @Override
-        protected Void doInBackground(final SendDataToDeviceTaskArgs... args)
-        {
-            try {
-                socket = new Socket(mHostAddress, mPort);
-                OutputStream out = socket.getOutputStream();
-                out.write(args[0].dataToSend);
-                out.flush();
-                out.close();
-                if (args[0].onSentMessage != null) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(MainActivity.this, args[0].onSentMessage, Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-            } catch (IOException e) {
-                Log.d(TAG, "Could not send data to remote device.");
-                // Probably wifi turned off. Try get connection details from settings again
-                initializeConnectionSettings();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid)
-        {
-            IsAsyncRunning = false;
-        }
-    }
-
     private void initializeConnectionSettings() {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String ipString = sharedPref.getString(SettingsActivity.KEY_PREF_IP_ADDRESS, "");
@@ -544,7 +504,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             mHostAddress = InetAddress.getByName(ipString);
         } catch (UnknownHostException e) {
             Toast.makeText(MainActivity.this, "Invalid IP Address in settings", Toast.LENGTH_LONG).show();
-            try { mHostAddress = InetAddress.getByName(""); } catch (UnknownHostException e1) {}
+            try {
+                mHostAddress = InetAddress.getByName("");
+            } catch (UnknownHostException e1) {
+            }
         }
         mPort = Integer.valueOf(port);
     }
@@ -614,24 +577,59 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
                 mHostAddress = serviceInfo.getHost();
                 mPort = serviceInfo.getPort();
-                synchronized(mCheckConnectionLockObject) {
+                synchronized (mCheckConnectionLockObject) {
                     checkConnection();
                 }
             }
         };
     }
 
-    public static int unsignedToBytes(byte b) {
-        return b & 0xFF;
+    public class CheckConnectionTask implements Runnable {
+        @Override
+        public void run() {
+            checkConnection();
+        }
+    }
+
+    public class SendDataToDeviceTask extends AsyncTask<SendDataToDeviceTaskArgs, Void, Void> {
+        @Override
+        protected Void doInBackground(final SendDataToDeviceTaskArgs... args) {
+            try {
+                socket = new Socket(mHostAddress, mPort);
+                OutputStream out = socket.getOutputStream();
+                out.write(args[0].dataToSend);
+                out.flush();
+                out.close();
+                if (args[0].onSentMessage != null) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this, args[0].onSentMessage, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            } catch (IOException e) {
+                Log.d(TAG, "Could not send data to remote device.");
+                // Probably wifi turned off. Try get connection details from settings again
+                initializeConnectionSettings();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            IsAsyncRunning = false;
+        }
     }
 
     public class SendDataToDeviceTaskArgs {
-        byte[] dataToSend;
         public String onSentMessage;
+        byte[] dataToSend;
 
         SendDataToDeviceTaskArgs(byte[] dataToSend) {
             this(dataToSend, null);
         }
+
         SendDataToDeviceTaskArgs(byte[] dataToSend, String onSentMessage) {
             this.dataToSend = dataToSend;
             this.onSentMessage = onSentMessage;

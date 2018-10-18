@@ -18,15 +18,12 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 public class AnimationDialog extends DialogFragment {
+    // Use this instance of the interface to deliver action events
+    AnimationDialogListener mListener;
     private float mDuration;
     private AnimationType mAnimationType;
     private Boolean mRandomColors = false;
 
-    public enum AnimationType {
-        OFF,
-        FADE,
-        BLINK
-    }
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
@@ -79,11 +76,10 @@ public class AnimationDialog extends DialogFragment {
     }
 
     @Override
-    public void onStart()
-    {
+    public void onStart() {
         super.onStart();    //super.onStart() is where dialog.show() is actually called on the underlying dialog, so we have to do it after this point
-        AlertDialog d = (AlertDialog)getDialog();
-        if(d == null)
+        AlertDialog d = (AlertDialog) getDialog();
+        if (d == null)
             return;
 
         final Spinner spinnerAnimation = d.findViewById(R.id.animationSpinner);
@@ -91,11 +87,9 @@ public class AnimationDialog extends DialogFragment {
         final CheckBox cbRandomColors = d.findViewById(R.id.randomColorsCheckBox);
 
         Button positiveButton = d.getButton(Dialog.BUTTON_POSITIVE);
-        positiveButton.setOnClickListener(new View.OnClickListener()
-        {
+        positiveButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v)
-            {
+            public void onClick(View v) {
                 String durationText = etDuration.getText().toString();
                 try {
                     mDuration = Float.parseFloat(durationText);
@@ -128,18 +122,6 @@ public class AnimationDialog extends DialogFragment {
         });
     }
 
-
-
-    /* The activity that creates an instance of this dialog fragment must
-     * implement this interface in order to receive event callbacks.
-     * Each method passes the DialogFragment in case the host needs to query it. */
-    public interface AnimationDialogListener {
-        public void onAnimationDialogPositiveClick(DialogFragment dialog);
-    }
-
-    // Use this instance of the interface to deliver action events
-    AnimationDialogListener mListener;
-
     // Override the Fragment.onAttach() method to instantiate the AnimationDialogListener
     @Override
     public void onAttach(Activity activity) {
@@ -165,5 +147,18 @@ public class AnimationDialog extends DialogFragment {
 
     public Boolean getRandomColors() {
         return mRandomColors;
+    }
+
+    public enum AnimationType {
+        OFF,
+        FADE,
+        BLINK
+    }
+
+    /* The activity that creates an instance of this dialog fragment must
+     * implement this interface in order to receive event callbacks.
+     * Each method passes the DialogFragment in case the host needs to query it. */
+    public interface AnimationDialogListener {
+        public void onAnimationDialogPositiveClick(DialogFragment dialog);
     }
 }
