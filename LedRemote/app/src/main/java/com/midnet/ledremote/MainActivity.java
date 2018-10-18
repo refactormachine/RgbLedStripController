@@ -399,18 +399,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     public void sendAnimationToLedDevice(float duration, AnimationDialog.AnimationType animationType, Boolean randomColors) {
         short durationInMillis = (short) (duration * 1000);
-        byte animationCode;
-        switch (animationType) {
-            case FADE:
-                animationCode = FADE_ANIMATION_CODE;
-                break;
-            case BLINK:
-                animationCode = BLINK_ANIMATION_CODE;
-                break;
-            default:
-                animationCode = 0; // Stops animation
-                break;
-        }
+        byte animationCode = animationTypeToCode(animationType);
         Log.d(TAG, "Sending to led device animation");
         byte[] serializedDuration = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(durationInMillis).array();
         byte[] data = new byte[7];
@@ -433,6 +422,22 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             message = String.format("%s animation of %.2f sec set!", animationName, duration);
         }
         sendDataToDeviceTask.execute(new SendDataToDeviceTaskArgs(dataToSend, message));
+    }
+
+    private byte animationTypeToCode(AnimationDialog.AnimationType animationType) {
+        byte animationCode;
+        switch (animationType) {
+            case FADE:
+                animationCode = FADE_ANIMATION_CODE;
+                break;
+            case BLINK:
+                animationCode = BLINK_ANIMATION_CODE;
+                break;
+            default:
+                animationCode = 0; // Stops animation
+                break;
+        }
+        return animationCode;
     }
 
     public void checkConnection() {
