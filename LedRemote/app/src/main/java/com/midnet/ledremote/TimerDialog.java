@@ -36,15 +36,9 @@ public class TimerDialog extends DialogFragment {
         final NumberPicker npMinutes = dialogView.findViewById(R.id.minutesNumberPicker);
         final NumberPicker npSeconds = dialogView.findViewById(R.id.secondsNumberPicker);
 
-        npHours.setMaxValue(99);
-        npHours.setMinValue(0);
-
-        npMinutes.setMaxValue(59);
-        npMinutes.setMinValue(0);
-
-        npSeconds.setMaxValue(59);
-        npSeconds.setMinValue(0);
-
+        setMinMax(npHours, 0,99);
+        setMinMax(npMinutes, 0,59);
+        setMinMax(npSeconds, 0,59);
         builder.setView(dialogView)
                 // Add action buttons
                 .setPositiveButton(R.string.set, new DialogInterface.OnClickListener() {
@@ -62,6 +56,11 @@ public class TimerDialog extends DialogFragment {
                 });
 
         return builder.create();
+    }
+
+    private void setMinMax(NumberPicker numberPicker, int min, int max) {
+        numberPicker.setMaxValue(max);
+        numberPicker.setMinValue(min);
     }
 
     @Override
