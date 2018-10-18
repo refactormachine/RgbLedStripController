@@ -4,7 +4,10 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,14 +16,18 @@ import android.widget.NumberPicker;
 import android.widget.RadioButton;
 import android.widget.Toast;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+
 public class TimerDialog extends DialogFragment {
-    private int mHours;
-    private int mMinutes;
-    private int mSeconds;
+    private Duration mHours;
+    private Duration mMinutes;
+    private Duration mSeconds;
     private TimerType mTimerType;
 
     int getTotalMiliseconds() {
-        return ((getHours() * 60 + getMinutes()) * 60 + getSeconds()) * 1000;
+        Duration mili = mHours.plus(mMinutes).plus(mSeconds);
+        return (int)mili.toMillis();
     }
 
     public enum TimerType {
@@ -87,22 +94,27 @@ public class TimerDialog extends DialogFragment {
             @Override
             public void onClick(View v)
             {
-                mHours = npHours.getValue();
-                mMinutes = npMinutes.getValue();
-                mSeconds = npSeconds.getValue();
+                mHours = Duration.of(npHours.getValue(), ChronoUnit.HOURS);
+                mMinutes = Duration.of(npMinutes.getValue(), ChronoUnit.MINUTES);
+                mSeconds = Duration.of(npSeconds.getValue(), ChronoUnit.SECONDS);
                 mTimerType = radioTurnOn.isChecked() ? TimerType.TURN_ON : TimerType.TURN_OFF;
 
+                if (canCloseDialog()) {
+                    dismiss();
+                    mListener.onTimerDialogPositiveClick(TimerDialog.this);
+                }
+                //else dialog stays open. Make sure you have an obvious way to close the dialog especially if you set cancellable to false.
+            }
+
+            @NonNull
+            private Boolean canCloseDialog() {
                 Boolean canCloseDialog = false;
                 if (radioTurnOn.isChecked() || radioTurnOff.isChecked()) {
                     canCloseDialog = true;
                 } else {
                     Toast.makeText(getActivity(), "You must select timer on or off", Toast.LENGTH_SHORT).show();
                 }
-                if (canCloseDialog) {
-                    dismiss();
-                    mListener.onTimerDialogPositiveClick(TimerDialog.this);
-                }
-                //else dialog stays open. Make sure you have an obvious way to close the dialog especially if you set cancellable to false.
+                return canCloseDialog;
             }
         });
 
@@ -134,15 +146,15 @@ public class TimerDialog extends DialogFragment {
         }
     }
 
-    public int getHours() {
+    public Duration getHours() {
         return mHours;
     }
 
-    public int getMinutes() {
+    public Duration getMinutes() {
         return mMinutes;
     }
 
-    public int getSeconds() {
+    public Duration getSeconds() {
         return mSeconds;
     }
 
